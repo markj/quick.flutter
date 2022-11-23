@@ -339,6 +339,17 @@ class _QuickUsbDesktop extends QuickUsbPlatform {
   }
 
   @override
+  Future<int> sendControlMessage(
+    UsbInterface intf, {
+    required int requestType,
+    required int request,
+    required int value,
+    List<int>? data,
+  }) async {
+    return 0;
+  }
+
+  @override
   Future<void> setAutoDetachKernelDriver(bool enable) async {
     assert(_devHandle != null, 'Device not open');
     if (Platform.isLinux) {

@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.hardware.usb.*
+import android.hardware.usb.UsbDeviceConnection
 import android.os.Build
 import androidx.annotation.NonNull
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -52,6 +53,24 @@ class QuickUsbPlugin : FlutterPlugin, MethodCallHandler {
   private var usbDevice: UsbDevice? = null
   private var usbDeviceConnection: UsbDeviceConnection? = null
 
+  private val usbTimeout = 0
+
+  private fun setControlCommand(requestType: Int, request: Int, value: Int, data: ByteArray?, connection: UsbDeviceConnection, interfaceId: Int): Int {
+    var dataLength = 0
+    if (data != null) {
+      dataLength = data.size
+    }
+    val response: Int = connection.controlTransfer(
+      requestType,
+      request,
+      value,
+      interfaceId,
+      data,
+      dataLength,
+      usbTimeout
+    )
+    return response
+  }
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
     when (call.method) {
       "getDeviceList" -> {
@@ -164,6 +183,23 @@ class QuickUsbPlugin : FlutterPlugin, MethodCallHandler {
         val alternateSetting = call.argument<Int>("alternateSetting")!!
         val usbInterface = device.findInterface(id, alternateSetting)
         result.success(connection.releaseInterface(usbInterface))
+      }
+      "sendControlCommand" -> {
+        val connection = usbDeviceConnection ?: return result.error(
+          "IllegalState",
+          "usbDeviceConnection null",
+          null
+        )
+
+        val requestType = call.argument<Int>("requestType")!!
+        val request = call.argument<Int>("request")!!
+        val value = call.argument<Int>("value")!!
+        val data: List<Int>? = call.argument("data")
+        val interfaceId = call.argument<Int>("interfaceId")!!
+        val byteArray: ByteArray? = data?.let{ ByteArray(it.size) { pos -> data[pos].toByte() }  }
+
+        val commandResult = setControlCommand(requestType, request, value, byteArray, usbDeviceConnection!!, interfaceId)
+        result.success(commandResult);
       }
       "bulkTransferIn" -> {
         val device = usbDevice ?: return result.error("IllegalState", "usbDevice null", null)

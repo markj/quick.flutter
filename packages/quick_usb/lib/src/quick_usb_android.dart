@@ -138,4 +138,21 @@ class QuickUsbAndroid extends QuickUsbPlatform {
 
   @override
   Future<void> setAutoDetachKernelDriver(bool enable) async {}
+
+  @override
+  Future<int> sendControlMessage(
+    UsbInterface interface, {
+    required int requestType,
+    required int request,
+    required int value,
+    List<int>? data,
+  }) async {
+    return await _channel.invokeMethod('sendControlCommand', {
+      'requestType': requestType,
+      'request': request,
+      'value': value,
+      'data': data,
+      'interfaceId': interface.id,
+    });
+  }
 }
